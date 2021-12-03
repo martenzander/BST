@@ -94,17 +94,22 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
 
                 # That means we can use the current frame as it represents the
                 # actual frame counter in the file.
-                frame_counter = frame
+                frame_counter = idx
 
                 # If frame out of bound left take first frame.
                 if frame < frames[0]:
-                    frame_counter = frames[0]
+                    frame_counter = 0
                 # If frame out of bound right take last frame.
                 elif frame > frames[-1]:
-                    frame_counter = frames[-1]
+                    frame_counter = len(file_list) - 1
 
                 output_path = output_dir.joinpath(f"{file_list[idx].stem}.jpg")
 
+                print("Loading frame counter: " + str(frame_counter))
+                print(
+                    "Frame duration: "
+                    + str(area.spaces.active.image_user.frame_duration)
+                )
                 render = self.render_image_editor_in_image_datablock(
                     area, new_image, frame_counter
                 )
@@ -116,22 +121,27 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
         # Single image.
         else:
             frame = context.scene.frame_current
+            frame_counter = list(frames).index(frame)
             # Means we have an image sequence loaded but want to render out current frame.
             if len(file_list) > 1:
                 # If frame out of bound left take first frame.
                 if frame < frames[0]:
-                    frame_counter = frames[0]
+                    frame_counter = 1
                 # If frame out of bound right take last frame.
                 elif frame > frames[-1]:
-                    frame_counter = frames[-1]
+                    frame_counter = len(file_list) - 1
             # If not part of image sequence take frame 0
             else:
-                frame_counter = frame
+                frame_counter = 0
 
             output_path = opsdata.get_review_output_path(
                 review_output_dir, media_filepath
             )
             output_path = output_path.parent.joinpath(f"{output_path.stem}.jpg")
+            print("Loading frame counter: " + str(frame_counter))
+            print(
+                "Frame duration: " + str(area.spaces.active.image_user.frame_duration)
+            )
             render = self.render_image_editor_in_image_datablock(
                 area, new_image, frame_counter
             )
@@ -145,6 +155,8 @@ class MV_OT_render_img_with_annotation(bpy.types.Operator):
     ) -> bpy.types.Image:
 
         global GP_DRAWER
+
+        bpy.ops.wm.redraw_timer({"area": area}, type="DRAW_WIN_SWAP", iterations=1)
 
         # Get active image, layer and pass.
         image = area.spaces.active.image
